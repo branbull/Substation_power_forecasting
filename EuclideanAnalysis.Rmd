@@ -1,0 +1,80 @@
+---
+title: "Euclidean Analysis Experiment"
+author: "Alexander B. C. Mantilla"
+date: "12/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This document is the primary document that I used for the time series analysis that I performed. Here, it took data calculated with the slope experiment document and filtered with the time filter experiment document to calculate a matrix profile for a selected set of sequences.
+```{r}
+library(dplyr)
+library(ggplot2)
+
+# zNorm(x). This function normalizes an inputted sequence.
+zNorm <- function(x) {
+y <- (x-mean(x))/sd(x);
+return(y)
+}
+
+# EucDist(x, y). This function determines the Euclidean distance between two inputted sequences.
+EucDist <- function(x,y) {
+D <- sqrt(sum(x-y)^2);
+return(D)
+}
+
+# Data type is selected here. (3 for total load, 4 for d/dt total load, 5 for d2/dt2 total load)
+crunch <- as.numeric(tot_load_skip[,5])
+
+# Number of data points in data type selected into 'crunch'. This could be replaced with a count function, but I inputted the value manually for the project.
+N = 43848
+
+# Window size. I selected windows of 6 hours in length as I felt they gave accurate results without taking too long to process.
+w = 6
+
+# Number of windows in N based on size of w. 1 point is subtracted from N to prevent the number of windows from extending beyond the total number of available data points.
+r = as.integer((N-1) / w)
+
+# These matrices will be used in the distance calculation in the for loop. They begin filled with zeros.
+x <- matrix(0,nrow=w,ncol=1)
+b <- matrix(0,nrow=r,ncol=1)
+d <- matrix(0,nrow=r,ncol=2)
+
+for (i in 1:r) {
+  # These equations convert i to a value that prevents window correlation.
+  j = 1 + ((i-1) * w)
+  k = j + (w-1)
+  
+  # x is defined as the current window.
+  x <- crunch[j:k]
+  
+  # x is normalized.
+  xN <- zNorm(x)
+
+  for(t in 1:r) {
+    # These equations convert t to a value that prevents window correlation.
+    p = 1 + ((t-1) * w)
+    q = p + (w-1)
+    
+    # y is defined as the current window.
+    y <- crunch[p:q]
+    
+    # y is normalized.
+    yN <- zNorm(y)
+    
+    # Euclidean distance for each y with a given x is calculated.
+    b <- EucDist(xN, yN)
+  }
+  
+  # Lowest distance for each x is stored.
+  d[i,2] <- min(b)
+  
+  # Distance matrix is erased to begin next iteration.
+  b <- matrix(0,nrow=r,ncol=1)
+}
+```

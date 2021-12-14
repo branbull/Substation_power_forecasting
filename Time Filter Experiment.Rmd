@@ -1,0 +1,51 @@
+---
+title: "Time Filter Experiment"
+author: "Alexander B. C. Mantilla"
+date: "12/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This document was created purely to see if I could separate the given date for each observation into separate days, months, years, and times. It was used to output dataframes that needed date/time specific filters.
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+
+#tot_raw <- readRDS('total_load_2016_thru_2020.RDS')
+
+#Separating Date and Time
+tot_raw$date <- as.Date(tot_raw$datetime_stamp)
+tot_raw$time <- format(as.POSIXct(tot_raw$datetime_stamp),
+                    format = "%H:%M:%S")
+
+#Separating Date into Day, Month, and Year
+tot_raw <- tot_raw %>%
+            dplyr::mutate(year = lubridate::year(date), 
+                month = lubridate::month(date), 
+                day = lubridate::day(date))
+
+#Selecting Year of Interest
+#tot_raw <- tot_raw %>%
+ # filter(year == '2017')
+#tot_raw <- tot_raw %>%
+ # filter(month == '1')
+
+#Filtering Down to Data to Day and Night Data (Day is from 5am to 5pm, Night is from 5pm to 5am.)
+#tot_raw <- tot_raw %>%
+ #filter(time >= '05:00:00' & time <= '17:00:00')
+
+
+
+
+#plot time and total disrtict load
+#ggplot(tot_raw, aes(x=datetime_stamp, y=total_district_load)) + geom_point(alpha = 0.5, col = "dark red")
+#ggplot(tot_night, aes(x=datetime_stamp, y=total_district_load)) + geom_point(alpha = 0.5, col = "dark blue")
+```
+
+

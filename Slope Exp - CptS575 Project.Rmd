@@ -1,0 +1,96 @@
+---
+title: "Power Usage Derivatives Analysis"
+author: "Alexander B. C. Mantilla"
+date: "11/17/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Here the raw data is converted into tidy data to represent total district load as well as individual substation loads.
+```{r}
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+
+#Raw data is extracted and funneled into two matrices: individual substation load (sub_long) and total substation load (tot_load)
+sub_raw <- readRDS('substation_long_2016_thru_2020.RDS') 
+tot_raw <- readRDS('total_load_2016_thru_2020.RDS')
+
+#The relative timestamp is removed, leaving the total district load paired with the UTC timestamp, which is a universal timestamp and more consistant than relative time.
+tot_load <- tot_raw %>%
+   select(timestamp_utc, total_district_load)
+
+#Individual substation data and total district load data are joined by their corresponding UTC timestamp. This is done such that each timestamp has the corresponding total load paired with each district load observation per timestamp.
+joined_data <- left_join(sub_raw, tot_load, by = "timestamp_utc")
+
+#Every observation with an NA value is removed. <<This may be updated later to salvage missing temperature values>>
+joined_data_noNA <- joined_data[complete.cases(joined_data),]
+
+#Complete data is adjusted to remove outlier power loads that were detected in the previous statistical analysis of the data. <<Temperature filters may be added on later>>
+power_data <- joined_data_noNA %>%
+  filter(mw_hours < 1000)
+
+#Individual substations are specified here.
+power_data_subA <- power_data %>%
+  filter(sub_loc == "a")
+power_data_subB <- power_data %>%
+  filter(sub_loc == "b")
+power_data_subC <- power_data %>%
+  filter(sub_loc == "c")
+power_data_subD <- power_data %>%
+  filter(sub_loc == "d")
+power_data_subE <- power_data %>%
+  filter(sub_loc == "e")
+power_data_subF <- power_data %>%
+  filter(sub_loc == "f")
+power_data_subG <- power_data %>%
+  filter(sub_loc == "g")
+power_data_subH <- power_data %>%
+  filter(sub_loc == "h")
+power_data_subI <- power_data %>%
+  filter(sub_loc == "i")
+power_data_subJ <- power_data %>%
+  filter(sub_loc == "j")
+```
+
+
+Here are some initial plots for the cleaned and tidyed data.
+```{r}
+#Total district load over time (abbreviated for graph clarity)
+#ggplot(power_data, aes(x=datetime_stamp, y=total_district_load)) + geom_point(alpha = 0.01)
+
+#Individual substation load over time (abbreviated for graph clarity)
+#ggplot(power_data_subB, aes(x=datetime_stamp, y=mw_hours)) + geom_point(alpha = 0.1)
+
+#Individual substation temperature over time (abbreviated for graph clarity)
+#ggplot(power_data_subB, aes(x=datetime_stamp, y=temp_f)) + geom_point(alpha = 0.1)
+
+#Individual substation load as a function of temperature (abbreviated for graph clarity)
+ggplot(power_data_subB, aes(x=temp_f, y=mw_hours)) + geom_point(alpha = 0.05)
+```
+
+Here we get the first and second derivatives of the load data for total district load and individual substation load.
+```{r}
+#This functon sets the number of skipped observations for the derivative calculations. Currently it is unused and therefore set to 1. The slope between each data point, and therefore each hour is being calculated. Skipping hours will likely be helpful later for cleaning up the plot.
+tot_load_skip <- tot_raw #%>% filter(row_number() %% 2 == 1)
+
+#Here the first derivative is calculated. The difference between each included observation's load is calculated and divided by the hourly time difference (the number of observations skipped).
+df_load = c(NA, diff(tot_load_skip$total_district_load)/1)
+tot_load_skip <- tot_load_skip %>%
+ mutate(df_load)
+
+#Here the second derivative is calculated using the same method but using the rate of change of the first derivative instead of the total load.
+d2f_load = c(NA, diff(tot_load_skip$df_load)/1)
+tot_load_skip <- tot_load_skip %>%
+ mutate(d2f_load)
+
+tot_raw$df_load <- df_load
+tot_raw$d2f_load <- d2f_load
+
+#Plots of both derivatives per hour. Currently very messy plots.
+ggplot(tot_load_skip, aes(x=datetime_stamp, y=df_load)) + geom_point(alpha = 0.5)
+ggplot(tot_load_skip, aes(x=datetime_stamp, y=d2f_load)) + geom_point(alpha = 0.5)
+```
