@@ -1,4 +1,5 @@
 # CptS-575-Proj
-Alex Mantilla and Brandon Bullard 
+Students: Alex Mantilla and Brandon Bullard 
 
-Combination of RMD and Jupyter files
+Substation power useage project.
+Combination of RMD and Jupyter files.
